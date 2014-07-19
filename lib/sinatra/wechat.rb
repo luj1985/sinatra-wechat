@@ -39,8 +39,7 @@ module Sinatra
         dispatcher.instance_eval &block
 
         get endpoint do
-          halt 403 unless validate_messages
-          ''
+          validate_messages ? params[:echostr] : ""
         end
 
         post endpoint do

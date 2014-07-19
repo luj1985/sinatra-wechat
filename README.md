@@ -29,11 +29,15 @@ __END__
 </xml>
 ```
 
+start server:
+``` sheel
+ruby app.rb
+```
 
 Then send HTTP post via curl:
 
-``` bash
-$ curl -X POST --data '<xml>
+``` shell
+curl -X POST --data '<xml>
 <ToUserName>tousername</ToUserName>
 <FromUserName>fromusername</FromUserName> 
 <CreateTime>1348831860</CreateTime>
