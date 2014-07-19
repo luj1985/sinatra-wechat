@@ -1,19 +1,17 @@
 # coding: utf-8
-lib = File.expand_path('../lib', __FILE__)
-$LOAD_PATH.unshift(lib) unless $LOAD_PATH.include?(lib)
+version = File.read(File.expand_path('../VERSION', __FILE__)).strip
 
 Gem::Specification.new do |spec|
   spec.name          = "sinatra-wechat"
-  spec.version       = "0.0.0"
-  spec.authors       = ["Lu, Jun"]
-  spec.email         = ["luj1985@gmail.com"]
-  spec.description   = %q{TODO: Write a gem description}
-  spec.summary       = %q{TODO: Write a gem summary}
-  spec.homepage      = ""
+  spec.version       = version
+  spec.authors       = "Lu, Jun"
+  spec.email         = "luj1985@gmail.com"
+  spec.summary       = "Sinatra extension for Tencent Wechat"
+  spec.description   = "Provide Sinatra API to response Wechat event push"
+  spec.homepage      = "https://github.com/luj1985/sinatra-wechat"
   spec.license       = "MIT"
 
   spec.files         = `git ls-files`.split($/)
-  spec.executables   = spec.files.grep(%r{^bin/}) { |f| File.basename(f) }
   spec.test_files    = spec.files.grep(%r{^(test|spec|features)/})
   spec.require_paths = ["lib"]
 

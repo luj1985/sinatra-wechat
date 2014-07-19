@@ -40,6 +40,7 @@ module Sinatra
 
         get endpoint do
           halt 403 unless validate_messages
+          ''
         end
 
         post endpoint do
@@ -77,6 +78,10 @@ module Sinatra
           settings.message_validation ? Digest::SHA1.hexdigest(raw) == params[:signature] : true
         end
       end
+      # expose to classic style
+      Delegator.delegate(:wechat)
     end
   end
+
+  register Wechat
 end
