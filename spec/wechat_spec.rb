@@ -16,8 +16,12 @@ describe Sinatra::Wechat do
     get '/'
     expect(last_response.status).to eq(403)
 
-    get '/', {:timestamp => '201407191804', :nonce => 'nonce', :signature => '9a91a1cea1cb60b87a9abb29dae06dce14721258'}
+    get '/', {:timestamp => '201407191804', 
+              :nonce => 'nonce', 
+              :signature => '9a91a1cea1cb60b87a9abb29dae06dce14721258',
+              :echostr => 'echo string'}
     expect(last_response.status).to eq(200)
+    expect(last_response.body).to eq('echo string')
 
     @instance.disable :message_validation
     get '/'
