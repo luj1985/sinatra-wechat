@@ -26,17 +26,7 @@ wechat('/wechat') {
   }
   text(:content => %r/\d+/) {
     content_type 'application/xml'
-    values = request[:wechat_values]
-    builder = Nokogiri::XML::Builder.new(:encoding => 'UTF-8') do |xml|
-      xml.xml {
-        xml.ToUserName values[:from_user_name]
-        xml.FromUserName values[:to_user_name]
-        xml.CreateTime Time.now.to_i
-        xml.MsgType "text"
-        xml.Content 'This is a text response'
-      }
-    end
-    builder.to_xml
+    erb :text_response, :locals => request[:wechat_values]
   }
   image(lambda { |values| values[:from_user_name] == 'test' }) {
     content_type 'application/xml'
@@ -74,3 +64,15 @@ wechat('/wechat') {
     builder.to_xml
   }
 }
+
+
+__END__
+@@ text_response
+
+<xml>
+<ToUserName><%= from_user_name %></ToUserName>
+<FromUserName><%= to_user_name %></FromUserName>
+<CreateTime><%= Time.now.to_i %></CreateTime>
+<MsgType>text</MsgType>
+<Content><![CDATA[你好]]></Content>
+</xml>
