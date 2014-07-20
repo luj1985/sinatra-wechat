@@ -33,14 +33,18 @@ module Sinatra
       end
 
       def wechat(endpoint = '/', wechat_token: '', validate_msg: true, &block)
-        before endpoint do
+        # XXX: 'before' doesn't work in Padrino framework
+        # seems like Padrino has redefined before, and make it incompatible with original one
+        # use a proc instead.
+        validation = Proc.new {
           if validate_msg then
             raw = [wechat_token, params[:timestamp], params[:nonce]].compact.sort.join
             halt 403 unless Digest::SHA1.hexdigest(raw) == params[:signature]
           end
-        end
+        }
 
         get endpoint do
+          instance_eval &validation
           content_type 'text/plain'
           params[:echostr]
         end
@@ -48,6 +52,8 @@ module Sinatra
         dispatcher = DispatcherBuilder.new(&block)
 
         post endpoint do
+          instance_eval &validation
+
           body = request.body.read || ""
           halt 400 if body.empty?  # bad request, cannot handle this kind of message
 
