@@ -1,4 +1,5 @@
 # Sinatra Wechat extension
+[![Build Status](https://travis-ci.org/luj1985/sinatra-wechat.svg?branch=master)]
 
 This extension is used to support [Tencent Wechat](https://mp.weixin.qq.com/) development mode.
 
