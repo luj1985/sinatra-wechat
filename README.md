@@ -3,7 +3,7 @@
 [![Gem Version](https://badge.fury.io/rb/sinatra-wechat.svg)](http://badge.fury.io/rb/sinatra-wechat)
 [![Coverage Status](https://coveralls.io/repos/luj1985/sinatra-wechat/badge.png)](https://coveralls.io/r/luj1985/sinatra-wechat)
 
-This extension is used to support [Tencent Wechat](https://mp.weixin.qq.com/) development mode.
+This extension is used to support [Tencent Wechat](https://mp.weixin.qq.com/) rapid development.
 
 ## Installation
 
@@ -11,7 +11,8 @@ This extension is used to support [Tencent Wechat](https://mp.weixin.qq.com/) de
 
 # Usage
 
-> use `disable :message_validation` to prevent message validation, otherwise need to add signature to the URL.
+Below code is a sample to implement auto reply, reply text `你好` when message came in contains number `%r{\d+}`.
+> use `disable :message_validation` to prevent wechat message validation, otherwise need to append signature to the URL.
 
 ```ruby
 # app.rb
@@ -39,13 +40,12 @@ __END__
 </xml>
 ```
 
-start server:
-```sheel
+start web server:
+```shell
 $ ruby app.rb
 ```
 
-Test via [cURL](http://curl.haxx.se):
-
+validate it via [cURL](http://curl.haxx.se):
 ```shell
 $ curl -X POST --data '<xml>
 <ToUserName>tousername</ToUserName>
