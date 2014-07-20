@@ -6,6 +6,7 @@ module Sinatra
   module Wechat
     module EndpointActions
       class WechatDispatcher < ::BlankSlate
+        attr_reader :wechat_token, :verfiy_message
         def initialize
           super
           @message_handlers = {}
@@ -34,18 +35,18 @@ module Sinatra
         end
       end
 
-      def wechat(endpoint = '/', &block)
+      def wechat(endpoint = '/', wechat_token: '', message_validation: true, &block)
         dispatcher = WechatDispatcher.new
         dispatcher.instance_eval &block
 
         get endpoint do
-          halt 403 unless validate_messages
+          halt 403 unless validate_messages(wechat_token) if message_validation
           content_type 'text/plain'
           params[:echostr]
         end
 
         post endpoint do
-          halt 403 unless validate_messages
+          halt 403 unless validate_messages(wechat_token) if message_validation
 
           body = request.body.read || ""
           halt 501 if body.empty?
@@ -69,14 +70,10 @@ module Sinatra
 
     def self.registered(app)
       app.extend(Wechat::EndpointActions)
-
       app.helpers do
-        enable :message_validation
-
-        def validate_messages
-          token = settings.wechat_token || ""
+        def validate_messages token
           raw = [token, params[:timestamp], params[:nonce]].compact.sort.join
-          settings.message_validation ? Digest::SHA1.hexdigest(raw) == params[:signature] : true
+          Digest::SHA1.hexdigest(raw) == params[:signature]
         end
       end
       # expose to classic style

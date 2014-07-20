@@ -13,7 +13,7 @@ Gem::Specification.new do |spec|
   spec.homepage           = "https://github.com/luj1985/sinatra-wechat"
   spec.license            = "MIT"
 
-  spec.files              = `git ls-files -z`.split("\x0") - %w[.gitignore .travis.yml]
+  spec.files              = `git ls-files -z`.split("\x0") - %w[.gitignore .travis.yml .coveralls.yml]
   spec.executables        = spec.files.grep(%r{^bin/}) { |f| File.basename(f) }
   spec.test_files         = spec.files.grep(%r{^(test|spec|features)/})
   spec.require_paths      = ["lib"]

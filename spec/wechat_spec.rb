@@ -4,13 +4,11 @@ describe Sinatra::Wechat do
   include Rack::Test::Methods
 
   it "GET should have message verification" do
-
     def app
-      @instance = Sinatra.new do
-        set :wechat_token, 'test-token'
+      instance = Sinatra.new do
         register Sinatra::Wechat
       end
-      @instance.wechat { }
+      instance.wechat(:wechat_token => 'test-token') { }
     end
 
     get '/'
@@ -22,19 +20,26 @@ describe Sinatra::Wechat do
               :echostr => 'echo string'}
     expect(last_response.status).to eq(200)
     expect(last_response.body).to eq('echo string')
+  end
 
-    @instance.disable :message_validation
+  it "Can disable message validation" do
+    def app
+      instance = Sinatra.new do
+        register Sinatra::Wechat
+      end
+      instance.wechat(:message_validation => false) { }
+    end
+
     get '/'
     expect(last_response.status).to eq(200)
   end
 
   it "POST should have message verification" do
     def app
-      @instance = Sinatra.new do
-        set :wechat_token, 'test-token'
+      instance = Sinatra.new do
         register Sinatra::Wechat
       end
-      @instance.wechat { 
+      instance.wechat(:wechat_token => 'test-token') {
         text { 'text response' }
       }
     end
@@ -59,11 +64,10 @@ describe Sinatra::Wechat do
 
   it "can switch wechat endpoint" do
     def app
-      @instance = Sinatra.new do
-        set :wechat_token, 'test-token'
+      instance = Sinatra.new do
         register Sinatra::Wechat
       end
-      @instance.wechat('/wechat') {
+      instance.wechat('/wechat', :wechat_token => 'test-token') {
         image { 'relocated response' }
       }
     end
@@ -90,11 +94,10 @@ describe Sinatra::Wechat do
 
   it "should accept wechat message push" do
     def app
-      @instance = Sinatra.new do
-        set :wechat_token, 'test-token'
+      instance = Sinatra.new do
         register Sinatra::Wechat
       end
-      @instance.wechat {
+      instance.wechat(:wechat_token => 'test-token') {
         text(:content => %r{regex match}) { 'regex match' }
         text(lambda {|values| values[:content] == 'function match'}) { 'function match' }
         text { 'default match' }
@@ -191,11 +194,10 @@ describe Sinatra::Wechat do
 
   it "should accept complex match" do
     def app
-      @instance = Sinatra.new do
-        set :wechat_token, 'test-token'
+      instance = Sinatra.new do
         register Sinatra::Wechat
       end
-      @instance.wechat {
+      instance.wechat(:wechat_token => 'test-token') {
         future(lambda {|vs| vs[:to_user_name] == 'test' }, :content => %r{future}, :create_time => '1348831860') {
           'complex match'
         }
@@ -229,12 +231,11 @@ describe Sinatra::Wechat do
   end
 
   it "should raise error when invalid condition set" do
-    @instance = Sinatra.new do
-      set :wechat_token, 'test-token'
+    instance = Sinatra.new do
       register Sinatra::Wechat
     end
     expect {
-      @instance.wechat {
+      instance.wechat(:wechat_token => 'test-token') {
         future('invalid condition') { 'complex match' }
       }
     }.to raise_exception
@@ -242,19 +243,21 @@ describe Sinatra::Wechat do
 
   it "can have multiple endpoint" do
     def app
-      @instance = Sinatra.new do
-        set :wechat_token, 'test-token'
+      instance = Sinatra.new do
         register Sinatra::Wechat
       end
-      @instance.wechat('/wechat1') {
+      instance.wechat('/wechat1', :wechat_token => 'test-token') {
         selector = lambda do |values|
           x = values[:location_x].to_f
           20 < x && x < 30
         end
         location(selector) { 'matched location range' }
       }
-      @instance.wechat('/wechat2') {
+      instance.wechat('/wechat2', :wechat_token => 'test') {
         text { 'this is another wechat endpoint' }
+      }
+      instance.wechat('/wechat3', :wechat_token => 'unknown', :message_validation => false) {
+        text { 'disable message validation' }
       }
     end
 
@@ -270,13 +273,20 @@ describe Sinatra::Wechat do
     expect(last_response.body).to eq('matched location range')
 
 
-    post '/wechat2?timestamp=201407191804&nonce=nonce&signature=9a91a1cea1cb60b87a9abb29dae06dce14721258', <<-EOF
-      <xml>
-      <MsgType>text</MsgType>
-      </xml>
-    EOF
+    post '/wechat2?timestamp=201407191804&nonce=nonce&signature=9a91a1cea1cb60b87a9abb29dae06dce14721258', '<xml><MsgType>text</MsgType></xml>'
+    expect(last_response.status).to eq(403)
+
+
+    post '/wechat2?timestamp=201407191804&nonce=nonce&signature=8149d14c72f418819b1eaab851aeab2c308f15cc', '<xml><MsgType>text</MsgType></xml>'
     expect(last_response.status).to eq(200)
     expect(last_response.body).to eq('this is another wechat endpoint')
+
+    get '/wechat3?echostr=return'
+    expect(last_response).to be_ok
+    expect(last_response.body).to eq('return')
+
+    post '/wechat3', '<xml><MsgType>text</MsgType></xml>'
+    expect(last_response.body).to eq('disable message validation')
 
   end
 end
