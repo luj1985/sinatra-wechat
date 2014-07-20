@@ -5,10 +5,7 @@ describe Sinatra::Wechat do
 
   it "GET should have message verification" do
     def app
-      instance = Sinatra.new do
-        register Sinatra::Wechat
-      end
-      instance.wechat(:wechat_token => 'test-token') { }
+      Sinatra.new { register Sinatra::Wechat }.wechat(:wechat_token => 'test-token') { }
     end
 
     get '/'
@@ -24,10 +21,7 @@ describe Sinatra::Wechat do
 
   it "Can disable message validation" do
     def app
-      instance = Sinatra.new do
-        register Sinatra::Wechat
-      end
-      instance.wechat(:message_validation => false) { }
+      Sinatra.new { register Sinatra::Wechat }.wechat(:message_validation => false) { }
     end
 
     get '/'
@@ -36,10 +30,7 @@ describe Sinatra::Wechat do
 
   it "POST should have message verification" do
     def app
-      instance = Sinatra.new do
-        register Sinatra::Wechat
-      end
-      instance.wechat(:wechat_token => 'test-token') {
+      Sinatra.new { register Sinatra::Wechat }.wechat(:wechat_token => 'test-token') {
         text { 'text response' }
       }
     end
@@ -64,10 +55,7 @@ describe Sinatra::Wechat do
 
   it "can switch wechat endpoint" do
     def app
-      instance = Sinatra.new do
-        register Sinatra::Wechat
-      end
-      instance.wechat('/wechat', :wechat_token => 'test-token') {
+      Sinatra.new { register Sinatra::Wechat }.wechat('/wechat', :wechat_token => 'test-token') {
         image { 'relocated response' }
       }
     end
@@ -94,10 +82,7 @@ describe Sinatra::Wechat do
 
   it "should accept wechat message push" do
     def app
-      instance = Sinatra.new do
-        register Sinatra::Wechat
-      end
-      instance.wechat(:wechat_token => 'test-token') {
+      Sinatra.new { register Sinatra::Wechat }.wechat(:wechat_token => 'test-token') {
         text(:content => %r{regex match}) { 'regex match' }
         text(lambda {|values| values[:content] == 'function match'}) { 'function match' }
         text { 'default match' }
@@ -189,15 +174,12 @@ describe Sinatra::Wechat do
       <MsgType>unknown</MsgType>
       </xml>
     EOF
-    expect(last_response.status).to eq(501)
+    expect(last_response.status).to eq(404)
   end
 
   it "should accept complex match" do
     def app
-      instance = Sinatra.new do
-        register Sinatra::Wechat
-      end
-      instance.wechat(:wechat_token => 'test-token') {
+      Sinatra.new { register Sinatra::Wechat }.wechat(:wechat_token => 'test-token') {
         future(lambda {|vs| vs[:to_user_name] == 'test' }, :content => %r{future}, :create_time => '1348831860') {
           'complex match'
         }
@@ -231,9 +213,7 @@ describe Sinatra::Wechat do
   end
 
   it "should raise error when invalid condition set" do
-    instance = Sinatra.new do
-      register Sinatra::Wechat
-    end
+    instance = Sinatra.new { register Sinatra::Wechat }
     expect {
       instance.wechat(:wechat_token => 'test-token') {
         future('invalid condition') { 'complex match' }
@@ -243,9 +223,7 @@ describe Sinatra::Wechat do
 
   it "can have multiple endpoint" do
     def app
-      instance = Sinatra.new do
-        register Sinatra::Wechat
-      end
+      instance = Sinatra.new { register Sinatra::Wechat }
       instance.wechat('/wechat1', :wechat_token => 'test-token') {
         selector = lambda do |values|
           x = values[:location_x].to_f
@@ -288,5 +266,20 @@ describe Sinatra::Wechat do
     post '/wechat3', '<xml><MsgType>text</MsgType></xml>'
     expect(last_response.body).to eq('disable message validation')
 
+  end
+
+  it "can handle bad formatted xml" do
+    def app
+      Sinatra.new { register Sinatra::Wechat }.wechat(:wechat_token => 'test-token') {
+        text { 'bare' }
+      }
+    end
+
+    post '/?timestamp=201407191804&nonce=nonce&signature=9a91a1cea1cb60b87a9abb29dae06dce14721258', <<-EOF
+      <xml>
+      <invalid>message</invalid>>
+      </xml>
+    EOF
+    expect(last_response.status).to eq(404)
   end
 end

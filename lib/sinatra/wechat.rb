@@ -6,7 +6,6 @@ module Sinatra
   module Wechat
     module EndpointActions
       class WechatDispatcher < ::BlankSlate
-        attr_reader :wechat_token, :verfiy_message
         def initialize
           super
           @message_handlers = {}
@@ -28,8 +27,9 @@ module Sinatra
         end
 
         def route!(values)
-          type = values[:msg_type].to_sym
-          handlers = @message_handlers[type] || []
+          type = values[:msg_type]
+          return nil unless type # unknown xml format
+          handlers = @message_handlers[type.to_sym] || []
           _, handler = handlers.find { |m, _| m.call(values) }
           handler
         end
@@ -63,7 +63,7 @@ module Sinatra
             v[name.to_sym] = e.content
           end
           handler = dispatcher.route!(values)
-          halt 501 unless handler
+          halt 404 unless handler
 
           request[:wechat_values] = values
           instance_eval(&handler)
