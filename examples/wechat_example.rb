@@ -17,7 +17,7 @@ location_event_reply = proc {
   builder.to_xml
 }
 
-wechat('/wechat', :wechat_token => 'test-token', :message_validation => false) {
+wechat('/wechat', :wechat_token => 'test-token', :validate_msg => false) {
   location {
     instance_eval &location_event_reply
   }

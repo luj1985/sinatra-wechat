@@ -2,15 +2,16 @@
 
 module Sinatra
   module Wechat
-    module EndpointActions
+    module Endpoint
       # Work as a Ruby Builder, treat every Wechat 'MsgType' as method name
       # the method arguments are the Wechat message it self
-      class WechatDispatcher < ::BlankSlate
+      class DispatcherBuilder < ::BlankSlate
         def initialize(&block)
           @message_handlers = {}
-          self.instance_eval(&block) if block_given?
+          instance_eval(&block) if block_given?
         end
 
+        # resp_blk is used to generate HTTP response, need to eval in Sinatra context
         def method_missing(sym, *args, &resp_blk)
           @message_handlers[sym] ||= []
           matchers = args.collect do |arg|
@@ -24,16 +25,16 @@ module Sinatra
           @message_handlers[sym] << [ matcher, resp_blk ]
         end
 
-        def dispatch! (values)
+        def dispatch!(values)
           return nil unless msg_type = values[:msg_type]
           handlers = @message_handlers[msg_type.to_sym] || []
           handlers.find { |m, _| m.call(values) }
         end
       end
 
-      def wechat(endpoint = '/', wechat_token: '', message_validation: true, &block)
+      def wechat(endpoint = '/', wechat_token: '', validate_msg: true, &block)
         before endpoint do
-          if message_validation then
+          if validate_msg then
             raw = [wechat_token, params[:timestamp], params[:nonce]].compact.sort.join
             halt 403 unless Digest::SHA1.hexdigest(raw) == params[:signature]
           end
@@ -44,7 +45,7 @@ module Sinatra
           params[:echostr]
         end
 
-        dispatcher = WechatDispatcher.new(&block)
+        dispatcher = DispatcherBuilder.new(&block)
 
         post endpoint do
           body = request.body.read || ""
@@ -61,14 +62,14 @@ module Sinatra
           halt 404 unless handler
 
           request[:wechat_values] = values
-          self.instance_eval(&handler)
+          instance_eval(&handler)
         end
         self
       end
     end
 
     def self.registered(application)
-      application.extend(Wechat::EndpointActions)
+      application.extend(Wechat::Endpoint)
       Sinatra::Delegator.delegate(:wechat) # expose wechat method to classic style
     end
   end

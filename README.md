@@ -12,14 +12,14 @@ This extension is used to support [Tencent Wechat](https://mp.weixin.qq.com/) ra
 # Usage
 
 Below code implement a simple wechat robot, reply text `你好` when message sent by end user contains number `%r{\d+}`.
-> use `:message_validation => false` to disable wechat message validation, otherwise need to append signature to the URL. The default value of `:message_validation` is `true`
+> use `:validate_msg => false` to disable wechat message validation, otherwise need to append signature to the URL. The default value of `:validate_msg` is `true`
 
 ```ruby
 # app.rb
 require 'sinatra'
 require 'sinatra/wechat'
 
-wechat('/', :wechat_token => 'test-token', :message_validation => false) {
+wechat('/', :wechat_token => 'test-token', :validate_msg => false) {
   text(:content => %r{\d+}) {
   	content_type 'application/xml'
   	erb :hello, :locals => request[:wechat_values]

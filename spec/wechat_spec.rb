@@ -21,7 +21,7 @@ describe Sinatra::Wechat do
   end
 
   it "Can disable message validation" do
-    app.wechat(:message_validation => false)
+    app.wechat(:validate_msg => false)
 
     get '/', { :echostr => 'echo' }
     expect(last_response).to be_ok
@@ -216,7 +216,7 @@ describe Sinatra::Wechat do
     app.wechat('/wechat2', :wechat_token => 'test') {
       text { 'this is another wechat endpoint' }
     }
-    app.wechat('/wechat3', :wechat_token => 'unknown', :message_validation => false) {
+    app.wechat('/wechat3', :wechat_token => 'unknown', :validate_msg => false) {
       text { 'disable message validation' }
     }
 
