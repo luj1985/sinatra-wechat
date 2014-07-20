@@ -9,7 +9,7 @@ Gem::Specification.new do |spec|
   spec.authors            = ["Lu, Jun"]
   spec.email              = ["luj1985@gmail.com"]
   spec.summary            = "Sinatra extension for Tencent Wechat"
-  spec.description        = "Provide Extensible Sinatra API to support Wechat development mode"
+  spec.description        = "Provide extensible Sinatra API to support rapid Wechat development"
   spec.homepage           = "https://github.com/luj1985/sinatra-wechat"
   spec.license            = "MIT"
 

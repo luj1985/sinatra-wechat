@@ -1,44 +1,37 @@
-require 'sinatra/base'
-require 'blankslate'
-require 'nokogiri'
+['sinatra/base', 'blankslate', 'nokogiri'].each { |m| require m }
 
 module Sinatra
   module Wechat
     module EndpointActions
+      # Work as a Ruby Builder, treat every Wechat 'MsgType' as method name
+      # the method arguments are the Wechat message it self
       class WechatDispatcher < ::BlankSlate
-        def initialize
-          super
+        def initialize(&block)
           @message_handlers = {}
+          self.instance_eval(&block) if block_given?
         end
 
-        def method_missing(sym, *args, &block)
+        def method_missing(sym, *args, &resp_blk)
           @message_handlers[sym] ||= []
-          matchers = args.collect do |v|
-            if v.respond_to?(:call) then lambda { |values| v.call(values) }
+          matchers = args.collect do |arg|
+            if arg.respond_to?(:call) then lambda &arg
             # for named parameters
-            elsif v.respond_to?(:all?) then lambda { |values| v.all? { |k,v| v === values[k]} }
+            elsif arg.respond_to?(:all?) then lambda { |values| arg.all? { |k,v| v === values[k]} }
             else raise TypeError, "\"#{v} (#{v.class})\" is not an acceptable condition"
-            end 
+            end
           end
-          matcher = lambda do |values| 
-            matchers.all? {|m| m.call(values)}
-          end
-          @message_handlers[sym] << [ matcher, block ]
+          matcher = lambda { |values| matchers.all? { |m| m.call(values) } }
+          @message_handlers[sym] << [ matcher, resp_blk ]
         end
 
-        def route!(values)
-          type = values[:msg_type]
-          return nil unless type # unknown xml format
-          handlers = @message_handlers[type.to_sym] || []
-          _, handler = handlers.find { |m, _| m.call(values) }
-          handler
+        def dispatch! (values)
+          return nil unless msg_type = values[:msg_type]
+          handlers = @message_handlers[msg_type.to_sym] || []
+          handlers.find { |m, _| m.call(values) }
         end
       end
 
       def wechat(endpoint = '/', wechat_token: '', message_validation: true, &block)
-        dispatcher = WechatDispatcher.new
-        dispatcher.instance_eval &block
-
         before endpoint do
           if message_validation then
             raw = [wechat_token, params[:timestamp], params[:nonce]].compact.sort.join
@@ -51,33 +44,34 @@ module Sinatra
           params[:echostr]
         end
 
+        dispatcher = WechatDispatcher.new(&block)
+
         post endpoint do
           body = request.body.read || ""
-          halt 400 if body.empty?  # bad request
+          halt 400 if body.empty?  # bad request, cannot handle this kind of message
 
-          doc = Nokogiri::XML(body).root
-          values = doc.element_children.each_with_object(Hash.new) do |e, v|
+          xmldoc = Nokogiri::XML(body).root
+          values = xmldoc.element_children.each_with_object(Hash.new) do |e, v|
             name = e.name.gsub(/(.)([A-Z])/,'\1_\2').downcase
             # rename 'Location_X' to 'location__x' then to 'location_x'
             name = name.gsub(/(_{2,})/,'_')
             v[name.to_sym] = e.content
           end
-          handler = dispatcher.route!(values)
+          _, handler = dispatcher.dispatch!(values)
           halt 404 unless handler
 
           request[:wechat_values] = values
-          instance_eval(&handler)
+          self.instance_eval(&handler)
         end
         self
       end
     end
 
-    def self.registered(app)
-      app.extend(Wechat::EndpointActions)
-      # expose to classic style
-      Delegator.delegate(:wechat)
+    def self.registered(application)
+      application.extend(Wechat::EndpointActions)
+      Sinatra::Delegator.delegate(:wechat) # expose wechat method to classic style
     end
   end
 
-  register Wechat
+  register Sinatra::Wechat
 end

@@ -1,39 +1,36 @@
-require File.expand_path '../spec_helper.rb', __FILE__
+require_relative 'spec_helper'
 
 describe Sinatra::Wechat do
-  include Rack::Test::Methods
 
-  it "GET should have message verification" do
-    def app
-      Sinatra.new { register Sinatra::Wechat }.wechat(:wechat_token => 'test-token') { }
-    end
+  let (:app) { Sinatra.new { register Sinatra::Wechat } }
+
+  it "should have message validation on GET method" do
+    app.wechat(:wechat_token => 'test-token')
 
     get '/'
     expect(last_response.status).to eq(403)
 
-    get '/', {:timestamp => '201407191804', 
-              :nonce => 'nonce', 
-              :signature => '9a91a1cea1cb60b87a9abb29dae06dce14721258',
-              :echostr => 'echo string'}
-    expect(last_response.status).to eq(200)
+    get '/', {
+      :timestamp => '201407191804', 
+      :nonce => 'nonce', 
+      :signature => '9a91a1cea1cb60b87a9abb29dae06dce14721258',
+      :echostr => 'echo string'
+    }
+    expect(last_response).to be_ok
     expect(last_response.body).to eq('echo string')
   end
 
   it "Can disable message validation" do
-    def app
-      Sinatra.new { register Sinatra::Wechat }.wechat(:message_validation => false) { }
-    end
+    app.wechat(:message_validation => false)
 
-    get '/'
-    expect(last_response.status).to eq(200)
+    get '/', { :echostr => 'echo' }
+    expect(last_response).to be_ok
+    expect(last_response.body).to eq('echo')
   end
 
-  it "POST should have message verification" do
-    def app
-      Sinatra.new { register Sinatra::Wechat }.wechat(:wechat_token => 'test-token') {
-        text { 'text response' }
-      }
-    end
+  it "should have message validation on POST method" do
+    app.wechat(:wechat_token => 'test-token') { text { 'text response' } }
+
     post '/'
     expect(last_response.status).to eq(403)
 
@@ -49,16 +46,13 @@ describe Sinatra::Wechat do
     EOF
 
     post '/?timestamp=201407191804&nonce=nonce&signature=9a91a1cea1cb60b87a9abb29dae06dce14721258', body
-    expect(last_response.status).to eq(200)
+    expect(last_response).to be_ok
     expect(last_response.body).to eq('text response')
   end
 
   it "can switch wechat endpoint" do
-    def app
-      Sinatra.new { register Sinatra::Wechat }.wechat('/wechat', :wechat_token => 'test-token') {
-        image { 'relocated response' }
-      }
-    end
+    app.wechat('/wechat', :wechat_token => 'test-token') { image { 'relocated response' } }
+
     body = <<-EOF
       <xml>
       <ToUserName><![CDATA[toUser]]></ToUserName>
@@ -75,27 +69,25 @@ describe Sinatra::Wechat do
     expect(last_response.status).to eq(404)
 
     post '/wechat?timestamp=201407191804&nonce=nonce&signature=9a91a1cea1cb60b87a9abb29dae06dce14721258', body
-    expect(last_response.status).to eq(200)
+    expect(last_response).to be_ok
     expect(last_response.body).to eq('relocated response')
     
   end
 
   it "should accept wechat message push" do
-    def app
-      Sinatra.new { register Sinatra::Wechat }.wechat(:wechat_token => 'test-token') {
-        text(:content => %r{regex match}) { 'regex match' }
-        text(lambda {|values| values[:content] == 'function match'}) { 'function match' }
-        text { 'default match' }
-        voice {
-          values = request[:wechat_values]
-          values[:msg_id]
-        }
-        location {
-          values = request[:wechat_values]
-          values[:label]
-        }
+    app.wechat(:wechat_token => 'test-token') {
+      text(:content => %r{regex match}) { 'regex match' }
+      text(lambda {|values| values[:content] == 'function match'}) { 'function match' }
+      text { 'default match' }
+      voice {
+        values = request[:wechat_values]
+        values[:msg_id]
       }
-    end
+      location {
+        values = request[:wechat_values]
+        values[:label]
+      }
+    }
 
     post '/?timestamp=201407191804&nonce=nonce&signature=9a91a1cea1cb60b87a9abb29dae06dce14721258', <<-EOF
       <xml>
@@ -107,9 +99,8 @@ describe Sinatra::Wechat do
       <MsgId>1234567890123456</MsgId>
       </xml>
     EOF
-    expect(last_response.status).to eq(200)
+    expect(last_response).to be_ok
     expect(last_response.body).to eq('regex match')
-
 
     post '/?timestamp=201407191804&nonce=nonce&signature=9a91a1cea1cb60b87a9abb29dae06dce14721258', <<-EOF
       <xml>
@@ -121,9 +112,8 @@ describe Sinatra::Wechat do
       <MsgId>1234567890123456</MsgId>
       </xml>
     EOF
-    expect(last_response.status).to eq(200)
+    expect(last_response).to be_ok
     expect(last_response.body).to eq('function match')
-
 
     post '/?timestamp=201407191804&nonce=nonce&signature=9a91a1cea1cb60b87a9abb29dae06dce14721258', <<-EOF
       <xml>
@@ -135,9 +125,8 @@ describe Sinatra::Wechat do
       <MsgId>1234567890123456</MsgId>
       </xml>
     EOF
-    expect(last_response.status).to eq(200)
+    expect(last_response).to be_ok
     expect(last_response.body).to eq('default match')
-
 
     post '/?timestamp=201407191804&nonce=nonce&signature=9a91a1cea1cb60b87a9abb29dae06dce14721258', <<-EOF
       <xml>
@@ -150,7 +139,7 @@ describe Sinatra::Wechat do
       <MsgId>1234567890123456</MsgId>
       </xml>
     EOF
-    expect(last_response.status).to eq(200)
+    expect(last_response).to be_ok
     expect(last_response.body).to eq('1234567890123456')
 
     post '/?timestamp=201407191804&nonce=nonce&signature=9a91a1cea1cb60b87a9abb29dae06dce14721258', <<-EOF
@@ -166,7 +155,7 @@ describe Sinatra::Wechat do
       <MsgId>1234567890123456</MsgId>
       </xml>
     EOF
-    expect(last_response.status).to eq(200)
+    expect(last_response).to be_ok
     expect(last_response.body).to eq('位置信息')
 
     post '/?timestamp=201407191804&nonce=nonce&signature=9a91a1cea1cb60b87a9abb29dae06dce14721258', <<-EOF
@@ -178,14 +167,12 @@ describe Sinatra::Wechat do
   end
 
   it "should accept complex match" do
-    def app
-      Sinatra.new { register Sinatra::Wechat }.wechat(:wechat_token => 'test-token') {
-        future(lambda {|vs| vs[:to_user_name] == 'test' }, :content => %r{future}, :create_time => '1348831860') {
-          'complex match'
-        }
-        range(:to_user_name => 'tesa'..'testz') { 'range match' }
+    app.wechat(:wechat_token => 'test-token') {
+      future(lambda {|vs| vs[:to_user_name] == 'test' }, :content => %r{future}, :create_time => '1348831860') {
+        'complex match'
       }
-    end
+      range(:to_user_name => 'tesa'..'testz') { 'range match' }
+    }
 
     post '/?timestamp=201407191804&nonce=nonce&signature=9a91a1cea1cb60b87a9abb29dae06dce14721258', <<-EOF
       <xml>
@@ -197,10 +184,8 @@ describe Sinatra::Wechat do
       <MsgId>1234567890123456</MsgId>
       </xml>
     EOF
-    expect(last_response.status).to eq(200)
+    expect(last_response).to be_ok
     expect(last_response.body).to eq('complex match')
-
-
 
     post '/?timestamp=201407191804&nonce=nonce&signature=9a91a1cea1cb60b87a9abb29dae06dce14721258', <<-EOF
       <xml>
@@ -208,36 +193,32 @@ describe Sinatra::Wechat do
       <MsgType>range</MsgType>
       </xml>
     EOF
-    expect(last_response.status).to eq(200)
+    expect(last_response).to be_ok
     expect(last_response.body).to eq('range match')
   end
 
   it "should raise error when invalid condition set" do
-    instance = Sinatra.new { register Sinatra::Wechat }
     expect {
-      instance.wechat(:wechat_token => 'test-token') {
+      app.wechat(:wechat_token => 'test-token') {
         future('invalid condition') { 'complex match' }
       }
     }.to raise_exception
   end
 
   it "can have multiple endpoint" do
-    def app
-      instance = Sinatra.new { register Sinatra::Wechat }
-      instance.wechat('/wechat1', :wechat_token => 'test-token') {
-        selector = lambda do |values|
-          x = values[:location_x].to_f
-          20 < x && x < 30
-        end
-        location(selector) { 'matched location range' }
-      }
-      instance.wechat('/wechat2', :wechat_token => 'test') {
-        text { 'this is another wechat endpoint' }
-      }
-      instance.wechat('/wechat3', :wechat_token => 'unknown', :message_validation => false) {
-        text { 'disable message validation' }
-      }
-    end
+    app.wechat('/wechat1', :wechat_token => 'test-token') {
+      selector = lambda do |values|
+        x = values[:location_x].to_f
+        20 < x && x < 30
+      end
+      location(selector) { 'matched location range' }
+    }
+    app.wechat('/wechat2', :wechat_token => 'test') {
+      text { 'this is another wechat endpoint' }
+    }
+    app.wechat('/wechat3', :wechat_token => 'unknown', :message_validation => false) {
+      text { 'disable message validation' }
+    }
 
     post '/wechat1?timestamp=201407191804&nonce=nonce&signature=9a91a1cea1cb60b87a9abb29dae06dce14721258', <<-EOF
       <xml>
@@ -247,16 +228,14 @@ describe Sinatra::Wechat do
       <Scale>20</Scale>
       </xml>
     EOF
-    expect(last_response.status).to eq(200)
+    expect(last_response).to be_ok
     expect(last_response.body).to eq('matched location range')
-
 
     post '/wechat2?timestamp=201407191804&nonce=nonce&signature=9a91a1cea1cb60b87a9abb29dae06dce14721258', '<xml><MsgType>text</MsgType></xml>'
     expect(last_response.status).to eq(403)
 
-
     post '/wechat2?timestamp=201407191804&nonce=nonce&signature=8149d14c72f418819b1eaab851aeab2c308f15cc', '<xml><MsgType>text</MsgType></xml>'
-    expect(last_response.status).to eq(200)
+    expect(last_response).to be_ok
     expect(last_response.body).to eq('this is another wechat endpoint')
 
     get '/wechat3?echostr=return'
@@ -265,15 +244,10 @@ describe Sinatra::Wechat do
 
     post '/wechat3', '<xml><MsgType>text</MsgType></xml>'
     expect(last_response.body).to eq('disable message validation')
-
   end
 
   it "can handle bad formatted xml" do
-    def app
-      Sinatra.new { register Sinatra::Wechat }.wechat(:wechat_token => 'test-token') {
-        text { 'bare' }
-      }
-    end
+    app.wechat(:wechat_token => 'test-token') { text { 'bare' } }
 
     post '/?timestamp=201407191804&nonce=nonce&signature=9a91a1cea1cb60b87a9abb29dae06dce14721258', <<-EOF
       <xml>
