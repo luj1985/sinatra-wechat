@@ -39,17 +39,18 @@ module Sinatra
         dispatcher = WechatDispatcher.new
         dispatcher.instance_eval &block
 
-        get endpoint do
+        before endpoint do
           halt 403 unless validate_messages(wechat_token) if message_validation
+        end
+
+        get endpoint do
           content_type 'text/plain'
           params[:echostr]
         end
 
         post endpoint do
-          halt 403 unless validate_messages(wechat_token) if message_validation
-
           body = request.body.read || ""
-          halt 501 if body.empty?
+          halt 400 if body.empty?  # bad request
 
           doc = Nokogiri::XML(body).root
           values = doc.element_children.each_with_object(Hash.new) do |e, v|
