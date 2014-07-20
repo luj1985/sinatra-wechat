@@ -1,5 +1,7 @@
 # Sinatra Wechat extension
 [![Build Status](https://travis-ci.org/luj1985/sinatra-wechat.svg?branch=master)](https://travis-ci.org/luj1985/sinatra-wechat)
+[![Gem Version](https://badge.fury.io/rb/sinatra-wechat.svg)](http://badge.fury.io/rb/sinatra-wechat)
+[![Coverage Status](https://coveralls.io/repos/luj1985/sinatra-wechat/badge.png)](https://coveralls.io/r/luj1985/sinatra-wechat)
 
 This extension is used to support [Tencent Wechat](https://mp.weixin.qq.com/) development mode.
 
