@@ -1,9 +1,16 @@
 # Sinatra Wechat extension
 
-This extension is used to support [Tencent Wechat](https://mp.weixin.qq.com/) development mode,
-the aim is to create application as minimal effort as possible:
+This extension is used to support [Tencent Wechat](https://mp.weixin.qq.com/) development mode.
 
-``` ruby
+## Installation
+
+    $ gem install sinatra-wechat
+
+# Usage
+
+> use `disable :message_validation` to prevent message validation, otherwise need to add signature to the URL.
+
+```ruby
 # app.rb
 require 'sinatra'
 require 'sinatra/wechat'
@@ -30,14 +37,14 @@ __END__
 ```
 
 start server:
-``` sheel
-ruby app.rb
+```sheel
+$ ruby app.rb
 ```
 
-Then send HTTP post via curl:
+Test via [cURL](http://curl.haxx.se):
 
-``` shell
-curl -X POST --data '<xml>
+```shell
+$ curl -X POST --data '<xml>
 <ToUserName>tousername</ToUserName>
 <FromUserName>fromusername</FromUserName> 
 <CreateTime>1348831860</CreateTime>
