@@ -2,9 +2,6 @@ require 'sinatra'
 require 'sinatra/wechat'
 require 'nokogiri'
 
-disable :message_validation
-set :wechat_token, 'test-token'
-
 location_event_reply = proc {
   content_type 'application/xml'
   values = request[:wechat_values]
@@ -20,7 +17,7 @@ location_event_reply = proc {
   builder.to_xml
 }
 
-wechat('/wechat') {
+wechat('/wechat', :wechat_token => 'test-token', :message_validation => false) {
   location {
     instance_eval &location_event_reply
   }
