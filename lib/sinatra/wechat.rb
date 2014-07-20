@@ -40,7 +40,10 @@ module Sinatra
         dispatcher.instance_eval &block
 
         before endpoint do
-          halt 403 unless validate_messages(wechat_token) if message_validation
+          if message_validation then
+            raw = [wechat_token, params[:timestamp], params[:nonce]].compact.sort.join
+            halt 403 unless Digest::SHA1.hexdigest(raw) == params[:signature]
+          end
         end
 
         get endpoint do
@@ -71,12 +74,6 @@ module Sinatra
 
     def self.registered(app)
       app.extend(Wechat::EndpointActions)
-      app.helpers do
-        def validate_messages token
-          raw = [token, params[:timestamp], params[:nonce]].compact.sort.join
-          Digest::SHA1.hexdigest(raw) == params[:signature]
-        end
-      end
       # expose to classic style
       Delegator.delegate(:wechat)
     end
